@@ -4,9 +4,9 @@
 包含一般登入登入，Google, Facebook Oauth
 
 ## Configuration
-這裡有兩個檔案需要 config
-1. aws_credentials.py: 裡面要設定 SES 的 IAM user
-2. oauth_credentials.py: 要設定你在 Google, Facebook 創建 Oauth API 的憑證
+這裡有兩個檔案需要設定
+- aws_credentials.py: 裡面要設定 SES 的 IAM user
+- oauth_credentials.py: 要設定你在 Google, Facebook 創建 Oauth API 的憑證
 
 ## Environment Initialization
 ```
