@@ -10,10 +10,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.10/ref/settings/
 """
 
+import json
 import os
 
-from .oauth_credentials import *
-from .aws_credentials import *
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -148,10 +147,17 @@ SOCIAL_AUTH_PIPELINE = (
 
 SOCIAL_AUTH_ADMIN_USER_SEARCH_FIELDS = ['username']
 
+with open("demo/oauth_credentials.json") as foauth:
+    oauth_credentials = json.loads(foauth.read())
+
+SOCIAL_AUTH_FACEBOOK_KEY = oauth_credentials['facebook_key']
+SOCIAL_AUTH_FACEBOOK_SECRET = oauth_credentials['facebook_secret']
 SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {
   'fields': 'id, name, email'
 }
 
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = oauth_credentials['google_key']
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = oauth_credentials['google_secret']
 SOCIAL_AUTH_GOOGLE_OAUTH2_IGNORE_DEFAULT_SCOPE = True
 SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
     'https://www.googleapis.com/auth/userinfo.email',
@@ -182,13 +188,15 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+with open("demo/aws_credentials.json") as f:
+    aws_credentials = json.loads(f.read())
 
 # EMAIL
 EMAIL_BACKEND = 'django_smtp_ssl.SSLEmailBackend'
 EMAIL_HOST = 'email-smtp.us-west-2.amazonaws.com'
 EMAIL_PORT = 465
-EMAIL_HOST_USER = AWS_SES_USER
-EMAIL_HOST_PASSWORD = AWS_SES_PASSWORD
+EMAIL_HOST_USER = aws_credentials['ses_user']
+EMAIL_HOST_PASSWORD = aws_credentials['ses_password']
 EMAIL_USE_TLS = True
 
 
