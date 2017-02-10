@@ -147,6 +147,12 @@ def general_sign_up(request):
     user.set_password(password)
     user.save()
     
+    # TODO 同步 nickname, contact_email
+    profile = user.userprofile
+    profile.nickname = user.username
+    profile.contact_email = email
+    profile.save()
+
     return Response(status=status.HTTP_201_CREATED)
 
 

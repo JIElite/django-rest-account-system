@@ -7,7 +7,9 @@ from django.utils import timezone
 # Create your models here.
 class UserProfile(models.Model):
     user = models.OneToOneField(User)
-    self_introduction = models.TextField()
+    nickname = models.TextField(blank=True)
+    contact_email = models.EmailField(null=True)
+    self_introduction = models.TextField(blank=True)
 
 
 class ResetPasswordToken(models.Model):

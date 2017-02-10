@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from .models import UserProfile
 
 def save_profile(backend, *args, **kwargs):
     
@@ -12,5 +13,16 @@ def save_profile(backend, *args, **kwargs):
     if user.email != "":
         user.email = ""
         user.save()
+    
+    # init user profile
+    profile = user.userprofile
+    if profile.nickname == "":
+        profile.nickname = fullname
+
+    if profile.contact_email is None:
+        profile.contact_email = email
+
+    profile.save()
+    
 
 
