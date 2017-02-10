@@ -31,7 +31,6 @@ ALLOWED_HOSTS = []
 
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -149,7 +148,6 @@ SOCIAL_AUTH_PIPELINE = (
 
 SOCIAL_AUTH_ADMIN_USER_SEARCH_FIELDS = ['username']
 
-# SOCIAL_AUTH_FACEBOOK_SCOPE = ['name']
 SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {
   'fields': 'id, name, email'
 }
