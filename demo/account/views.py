@@ -153,7 +153,7 @@ def general_sign_up(request):
     # 所以 user.save() 時，一定會確保 create_profile 這件事
     profile = user.userprofile
     profile.nickname = user.username
-    profile.contact_email = email
+    profile.contact_email = user.email
     profile.save()
 
     return Response(status=status.HTTP_201_CREATED)
