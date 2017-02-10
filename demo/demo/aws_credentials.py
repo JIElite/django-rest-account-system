@@ -1,2 +1,0 @@
-AWS_SES_USER = ''
-AWS_SES_PASSWORD = ''
