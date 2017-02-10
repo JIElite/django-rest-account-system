@@ -20,7 +20,8 @@ from .models import UserProfile, ResetPasswordToken
 
 
 
-# 這個 Method 是用來測試查看使用者登入狀況
+# 這個 Method 是用來測試查看使用者資訊，僅供測試用
+# Precondition: None
 @api_view(['GET'])
 def get_user_info(request):
     if not request.user.is_authenticated():
@@ -30,10 +31,11 @@ def get_user_info(request):
     return Response({"username":user.username, "email": user.email},
             status=status.HTTP_200_OK)
 
-        
-
-
-
+# Precondition:
+#   1. 使用者尚未登入得情況
+#   2. Oauth 使用者不得透過這個 API 進行登入
+#   3. 登入欄位:
+#       username, password
 @api_view(['GET', 'POST'])
 def sign_in(request):
     if request.user.is_authenticated():
@@ -42,7 +44,8 @@ def sign_in(request):
     # handle GET method
     if request.method != "POST":
         return render(request, "login.html")
-   
+    
+    # 欄位檢驗
     try:
         username = request.data["username"]
         password = request.data["password"]
@@ -50,6 +53,7 @@ def sign_in(request):
         return Response({"error": "請輸入username, password"},
         status=status.HTTP_422_UNPROCESSABLE_ENTITY)
     
+    # 檢驗是否為 Oauth 帳戶，因為 Oauth 帳戶不能夠過這個登入途徑
     try:
         user = User.objects.get(username=username)
     except User.DoesNotExist:
@@ -59,18 +63,22 @@ def sign_in(request):
         if user.social_auth.exists():
             return Response({"error":"Oauth Account, 請使用 Oauth 登入"},
             status=status.HTTP_403_FORBIDDEN)
-
+    
+    # 驗證身份 
     user = authenticate(username=username, password=password)
     if user is None:
-        return Response(status=status.HTTP_401_UNAUTHORIZED)
+        return Response({"error": "帳戶驗證錯誤"},
+        status=status.HTTP_401_UNAUTHORIZED)
      
     login(request, user)
     
     return Response(status=status.HTTP_200_OK)
         
 
-
 # TODO 為了測試方便有設定允許 GET, 但是實際上不行
+# Precondition:
+#   1. 使用者必須是已登入狀態, Oauth 使用者也可以登出
+#   2. 欄位: 沒有額外需求
 @api_view(['GET', 'POST'])
 def sign_out(request):
     if not request.user.is_authenticated():
@@ -81,6 +89,10 @@ def sign_out(request):
     return Response(status=status.HTTP_200_OK)
 
 
+# 這是一般使用者註冊的 API
+# Precondition:
+#   1. 使用者必須是尚未登入的狀態
+#   2. username, email 不可與其他帳號重複
 @api_view(['GET', 'POST'])
 def general_sign_up(request):
     # Django User Model 只有保證 username 是 unique 這件事情
@@ -93,7 +105,6 @@ def general_sign_up(request):
 
 
     ### The following is for handing POST method 
-    print(request.data)
     try:
         username = request.data["username"]
         email = request.data["email"]
@@ -117,12 +128,12 @@ def general_sign_up(request):
     except ValidationError:
         return Response({"error":"email_format_error"},
         status=status.HTTP_400_BAD_REQUEST)
-
-    # check uniqueness of email
-    exist_user_email = User.objects.filter(email=email).exists()
-    if exist_user_email:
-        return Response({"error":"Email 已被註冊"},
-        status=status.HTTP_409_CONFLICT)
+    else:
+        # check uniqueness of email
+        exist_user_email = User.objects.filter(email=email).exists()
+        if exist_user_email:
+            return Response({"error":"Email 已被註冊"},
+            status=status.HTTP_409_CONFLICT)
     
     # TODO password format validation
     
@@ -139,6 +150,9 @@ def general_sign_up(request):
     return Response(status=status.HTTP_201_CREATED)
 
 
+# Precondition:
+#   1. 使用者必須為登入狀態才可以更改密碼
+#   2. Oauth 使用者不可以更改密碼
 @api_view(['GET', 'POST'])
 def change_password(request):
     if not request.user.is_authenticated():
@@ -157,7 +171,8 @@ def change_password(request):
         new_password = request.data['new_password']
         confirm_new_password = request.data['confirm_new_password']
     except KeyError:
-        return Response(status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        return Response({"error": "請填寫完所有欄位"},
+        status=status.HTTP_422_UNPROCESSABLE_ENTITY)
    
     user = request.user
     if not user.check_password(current_password):
@@ -165,7 +180,7 @@ def change_password(request):
         status=status.HTTP_400_BAD_REQUEST)
 
     if new_password != confirm_new_password:
-        return Response({"error":"password_confirmation_failed"},
+        return Response({"error":"新密碼與確認密碼不一致"},
         status=status.HTTP_400_BAD_REQUEST)
 
     # TODO password format validation
@@ -176,13 +191,14 @@ def change_password(request):
 
     return Response(status=status.HTTP_200_OK)
 
-
+# Precondition:
+#   1. Oauth 使用者不可以尋找密碼
 @api_view(['GET', 'POST'])
 def find_password(request):
     # missing password 要填的資料: email
     # 填完後送出後，會寄一封信件給 user, 內容夾帶著 reset password
     # 的連結。
-    
+
     # handle GET method
     if request.method != "POST":
         return render(request, "find_password.html") 
@@ -191,21 +207,25 @@ def find_password(request):
         email = request.data['email']
         validate_email(email)
     except KeyError:
-        return Response(status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        return Response({"error":"沒有email欄位"},
+        status=status.HTTP_422_UNPROCESSABLE_ENTITY)
     except ValidationError:
         # 必須要 validate 因為 facebook 不一定能夠取得 email
         # 會造成多個 email == "" 的情況，後面的 User.objects.get
         # 就不能使用了
-        return Response({"error":"email_format_error"},
+        return Response({"error":"email 格式錯誤"},
         status=status.HTTP_400_BAD_REQUEST)
-
-    user_exist = User.objects.filter(email=email).exists()
-    if not user_exist:
-        return Response(status=status.HTTP_403_FORBIDDEN)
+    else: 
+        user_exist = User.objects.filter(email=email).exists()
+        if not user_exist:
+            return Response({"error": "沒有這個 email 的使用者"},
+            status=status.HTTP_403_FORBIDDEN)
     
+    # 因為 Oauth 帳戶沒有密碼，所以不提供這功能
     user = User.objects.get(email=email)
     if user.social_auth.exists():
-        return Response({"error":"Oauth user"}, status=status.HTTP_403_FORBIDDEN)
+        return Response({"error":"Oauth user 不能使用這個功能"},
+        status=status.HTTP_403_FORBIDDEN)
     
     # generate reset password url
     url_seed = (email + time.ctime() + "#$@%$").encode("utf-8")
@@ -235,8 +255,8 @@ From service@shareclass.com".format(username=user.username,
             expire_time=accessible_time.strftime("%Y-%m-%d %H:%M"),
             entry_token=entry_token)
 
-    print(email_content)
-
+    
+    # TODO check send_mail response
     send_mail(
             'Share Class 忘記密碼重置信',
             email_content,
@@ -247,14 +267,17 @@ From service@shareclass.com".format(username=user.username,
      
     return Response(status=200)
         
-
+# Precondition:
+#   1. 使用者不可為登入狀態
+#   2. Oauth 使用者不可以尋找密碼
 @api_view(['GET', 'POST'])
 def reset_password(request, url_token):
     # 設定成功之後，沒有限制操作次數
 
     # 不讓已登入的人來找密碼
     if request.user.is_authenticated():
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error":"使用者已登入，不可重置密碼"},
+        status=status.HTTP_400_BAD_REQUEST)
 
     if request.method != "POST":
         return render(request, "reset_password.html")
@@ -263,11 +286,13 @@ def reset_password(request, url_token):
     try:
         user_reset_password_token = ResetPasswordToken.objects.get(dynamic_url=url_token)
     except ResetPasswordToken.DoesNotExist:
-        return Response(status=status.HTTP_403_FORBIDDEN)
+        return Response({"error": "錯誤的 url"},
+        status=status.HTTP_403_FORBIDDEN)
     
     # check Dynamic URL lifetime
     if timezone.now() > user_reset_password_token.expire_time:
-        return Response(status=status.HTTP_403_FORBIDDEN)
+        return Response({"error": "驗證連結已超過時間"},
+        status=status.HTTP_403_FORBIDDEN)
 
     # Request Data Validation 
     try:
@@ -275,7 +300,8 @@ def reset_password(request, url_token):
         confirm_new_password = request.data['confirm_new_password']
         entry_token = request.data['entry_token']
     except KeyError:
-        return Response(status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        return Response({"error":"欄位沒有填寫完整"},
+        status=status.HTTP_422_UNPROCESSABLE_ENTITY)
     else:
         if new_password != confirm_new_password or\
         entry_token != user_reset_password_token.entry_token:
