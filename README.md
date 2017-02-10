@@ -9,7 +9,7 @@
 2. oauth_credentials.py: 要設定你在 Google, Facebook 創建 Oauth API 的憑證
 
 ## Environment Initialization
-`
+```
 create virtual environment for python
 $ virtualenv -p python env
 $ source env/bin/activate
@@ -20,12 +20,12 @@ $ cd demo
 $ ./manage.py migrate
 $ ./manage.py makemigrations account
 $ ./manage.py migrate
-`
+```
 
 ## Run Server
-`
+```
 $ ./manage.py runserver
-`
+```
 
 ## Endpoint
 使用方式： 127.0.0.1:8000/accounts/register/
