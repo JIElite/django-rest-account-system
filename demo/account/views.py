@@ -147,7 +147,10 @@ def general_sign_up(request):
     user.set_password(password)
     user.save()
     
-    # TODO 同步 nickname, contact_email
+    # 同步 nickname, contact_email
+    # 不用 check user profile model 是不是有建立連結
+    # 因為我們已經利用 signal (.models.create_profile) 的方式跟 db 同步
+    # 所以 user.save() 時，一定會確保 create_profile 這件事
     profile = user.userprofile
     profile.nickname = user.username
     profile.contact_email = email
