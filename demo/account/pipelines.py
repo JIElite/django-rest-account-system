@@ -19,7 +19,7 @@ def save_profile(backend, *args, **kwargs):
     if profile.nickname == "":
         profile.nickname = fullname
 
-    if profile.contact_email is None:
+    if profile.contact_email == "":
         profile.contact_email = email
 
     profile.save()
