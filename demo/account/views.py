@@ -253,16 +253,24 @@ def find_password(request):
     rt.save()
 
     # Send Email Message
-    email_content = "Hi, {username}\n\
-已下是重置密碼的連結，如果您沒有使用忘記密碼的功能，請忽略本信\n\
-下面的連結存活時間到 {expire_time} 為止。\n\n\
-{reset_password_url}\n\
-另外，在該連結中必須輸入Token: {entry_token}, 用以驗證。\n\n\
-感謝您的使用!\n\n\n\
-From service@shareclass.com".format(username=user.username,
-            reset_password_url="http://127.0.0.1:8000/accounts/reset_password/" + url_token,
+    email_content = (
+            "Hi, {username}\n\n"
+            "已下是重置密碼的連結，如果您沒有使用忘記密碼的功能，請忽略本信\n"
+            "下面的連結存活時間到 {expire_time} 為止\n"
+            "另外，在該連結中必須輸入驗證碼用以驗證。\n\n"
+            "密碼重置連結:\n"
+            "{reset_password_url}\n"
+            "驗證碼: {entry_token}\n\n"
+            "感謝謝您的使用!\n"
+            "From service@shareclass.com"
+    ).format(
+            username=user.username,
             expire_time=accessible_time.strftime("%Y-%m-%d %H:%M"),
-            entry_token=entry_token)
+            reset_password_url="http://127.0.0.1:8000/accounts/reset_password/" + url_token,
+            entry_token=entry_token
+    )
+
+
 
     
     # TODO check send_mail response
