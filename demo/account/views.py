@@ -28,8 +28,13 @@ def get_user_info(request):
         return Response({"auth":"Anonymous user"}, status=200)
         
     user = request.user
-    return Response({"username":user.username, "email": user.email},
-            status=status.HTTP_200_OK)
+    user_info = {
+        "username": user.username, 
+        "nickname": user.userprofile.nickname
+    }
+
+    return Response(user_info, status=status.HTTP_200_OK)
+
 
 # Precondition:
 #   1. 使用者尚未登入得情況
@@ -90,6 +95,9 @@ def sign_out(request):
 
 
 # 這是一般使用者註冊的 API
+# 利用 email 做為使用者的 username 註冊
+# 所以在驗證 username format 的時候要利用 email validator
+#
 # Precondition:
 #   1. 使用者必須是尚未登入的狀態
 #   2. username, email 不可與其他帳號重複
@@ -103,37 +111,28 @@ def general_sign_up(request):
     if request.method != "POST":
         return render(request, "register.html")
 
-
     ### The following is for handing POST method 
     try:
         username = request.data["username"]
-        email = request.data["email"]
         password = request.data["password"]
         confirm_password = request.data["confirm_password"]
     except KeyError:
         return Response({"error": "欄位尚未填寫完整"},
         status=status.HTTP_422_UNPROCESSABLE_ENTITY)
     
-    # TODO username format validation
-
     # check uniqueness of username
     exist_username = User.objects.filter(username=username).exists()
     if exist_username:
         return Response({"error":"Username 已被註冊"},
         status=status.HTTP_409_CONFLICT)
     
-    # email format validation 
+    # username format validation: 
+    # 一般註冊的 username 會是 email 形式。
     try:
-        validate_email(email)
+        validate_email(username)
     except ValidationError:
         return Response({"error":"email_format_error"},
         status=status.HTTP_400_BAD_REQUEST)
-    else:
-        # check uniqueness of email
-        exist_user_email = User.objects.filter(email=email).exists()
-        if exist_user_email:
-            return Response({"error":"Email 已被註冊"},
-            status=status.HTTP_409_CONFLICT)
     
     # TODO password format validation
     
@@ -143,7 +142,7 @@ def general_sign_up(request):
         status=status.HTTP_400_BAD_REQUEST)
     
     # create user
-    user = User(username=username, email=email)
+    user = User(username=username)
     user.set_password(password)
     user.save()
     
@@ -152,8 +151,8 @@ def general_sign_up(request):
     # 因為我們已經利用 signal (.models.create_profile) 的方式跟 db 同步
     # 所以 user.save() 時，一定會確保 create_profile 這件事
     profile = user.userprofile
-    profile.nickname = user.username
-    profile.contact_email = user.email
+    profile.nickname = user.username.split("@")[0]
+    profile.contact_email = user.username
     profile.save()
 
     return Response(status=status.HTTP_201_CREATED)
@@ -194,7 +193,6 @@ def change_password(request):
 
     # TODO password format validation
     
-    
     user.set_password(new_password)
     user.save()
 
@@ -224,14 +222,15 @@ def find_password(request):
         # 就不能使用了
         return Response({"error":"email 格式錯誤"},
         status=status.HTTP_400_BAD_REQUEST)
-    else: 
-        user_exist = User.objects.filter(email=email).exists()
+    else:
+        # TODO 因為 username is unique data, 這的 filter 可以改變寫法
+        user_exist = User.objects.filter(username=email).exists()
         if not user_exist:
             return Response({"error": "沒有這個 email 的使用者"},
             status=status.HTTP_403_FORBIDDEN)
     
     # 因為 Oauth 帳戶沒有密碼，所以不提供這功能
-    user = User.objects.get(email=email)
+    user = User.objects.get(username=email)
     if user.social_auth.exists():
         return Response({"error":"Oauth user 不能使用這個功能"},
         status=status.HTTP_403_FORBIDDEN)
@@ -264,13 +263,11 @@ def find_password(request):
             "感謝謝您的使用!\n"
             "From service@shareclass.com"
     ).format(
-            username=user.username,
+            username=user.userprofile.nickname,
             expire_time=accessible_time.strftime("%Y-%m-%d %H:%M"),
             reset_password_url="http://127.0.0.1:8000/accounts/reset_password/" + url_token,
             entry_token=entry_token
     )
-
-
 
     
     # TODO check send_mail response
@@ -326,7 +323,6 @@ def reset_password(request, url_token):
             status=status.HTTP_400_BAD_REQUEST)
     
     # TODO Password Validation
-
 
     # Reset Password
     user = user_reset_password_token.user

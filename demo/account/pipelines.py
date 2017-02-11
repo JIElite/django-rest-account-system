@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from .models import UserProfile
 
+# 這個 pipeline 只有在處理 Oauth Account 的時候會用到
 def save_profile(backend, *args, **kwargs):
     
     username = kwargs.get('username')
@@ -10,9 +11,6 @@ def save_profile(backend, *args, **kwargs):
 
     # clean email to disable find password
     user = User.objects.get(username=username)
-    if user.email != "":
-        user.email = ""
-        user.save()
     
     # init user profile
     profile = user.userprofile
