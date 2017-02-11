@@ -41,6 +41,8 @@ def get_user_info(request):
 #   2. Oauth 使用者不得透過這個 API 進行登入
 #   3. 登入欄位:
 #       username, password
+# 這裏沒有檢查 username format 是不是 email 是因為我們先排除了 Oauth 帳戶
+# 接著用 authenticate 去驗證帳戶是不是存在，所以可以不用驗證
 @api_view(['GET', 'POST'])
 def sign_in(request):
     if request.user.is_authenticated():
