@@ -27,5 +27,4 @@ class ResetPasswordToken(models.Model):
 def create_profile(sender, instance=None, created=False, **kwargs):
     if created:
         UserProfile.objects.create(user=instance)
-        ResetPasswordToken.objects.create(user=instance, expire_time=timezone.localtime(timezone.now()))
 
