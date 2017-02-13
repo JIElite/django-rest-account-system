@@ -20,7 +20,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
         
 from .models import UserProfile, ResetPasswordToken
-
+from .utils import is_valid_password
 
 
 class UserInfoTestView(APIView): 
@@ -150,7 +150,9 @@ class GeneralSignUpView(APIView):
             return Response({"error":"password_confirmation_failed"},
             status=status.HTTP_400_BAD_REQUEST)
         
-        # TODO password format validation
+        if not is_valid_password(password):
+            return Response({"error":"密碼格式錯誤"},
+            status=status.HTTP_400_BAD_REQUEST)
 
         # check user exists or not
         exist_username = User.objects.filter(username=username).exists()
@@ -208,8 +210,10 @@ class ChangePasswordView(APIView):
             return Response({"error":"新密碼與確認密碼不一致"},
             status=status.HTTP_400_BAD_REQUEST)
 
-        # TODO password format validation
-        
+        if not is_valid_password(new_password):
+            return Response({"error":"密碼格式錯誤"},
+            status=status.HTTP_400_BAD_REQUEST)
+
         user = request.user
         if not user.check_password(current_password):
             return Response({"error":"與目前密碼不符"},
@@ -369,7 +373,7 @@ class ResetPasswordView(APIView):
         confirm_new_password = request.data.get('confirm_new_password', '')
         entry_token = request.data.get('entry_token', '')
         
-        # Request Data Validation 
+        # Empty Data Validation 
         if new_password == "" or confirm_new_password == "" or entry_token == "":
             return Response({"error":"欄位沒有填寫完整"},
             status=status.HTTP_422_UNPROCESSABLE_ENTITY)
@@ -380,7 +384,9 @@ class ResetPasswordView(APIView):
             return Response({"error":"輸入不一致或是驗證碼錯誤"},
             status=status.HTTP_400_BAD_REQUEST)
         
-        # TODO Password Validation
+        if not is_valid_password(new_password):
+            return Response({"error":"密碼格式錯誤"},
+            status=status.HTTP_400_BAD_REQUEST)
 
         # Reset Password
         user = user_reset_password_token.user
