@@ -53,10 +53,9 @@ def sign_in(request):
         return render(request, "login.html")
     
     # 欄位檢驗
-    try:
-        username = request.data["username"]
-        password = request.data["password"]
-    except KeyError:
+    username = request.data.get("username", "")
+    password = request.data.get("password", "")
+    if username == "" or password == "":
         return Response({"error": "請輸入username, password"},
         status=status.HTTP_422_UNPROCESSABLE_ENTITY)
     
@@ -97,6 +96,7 @@ def sign_out(request):
 
 
 # 這是一般使用者註冊的 API
+# Django User Model 只有保證 username 是 unique 這件事情
 # 利用 email 做為使用者的 username 註冊
 # 所以在驗證 username format 的時候要利用 email validator
 #
@@ -105,7 +105,6 @@ def sign_out(request):
 #   2. username, email 不可與其他帳號重複
 @api_view(['GET', 'POST'])
 def general_sign_up(request):
-    # Django User Model 只有保證 username 是 unique 這件事情
     if request.user.is_authenticated():
         return Response({"error":"使用者已登入"},
         status=status.HTTP_400_BAD_REQUEST)
@@ -114,11 +113,11 @@ def general_sign_up(request):
         return render(request, "register.html")
 
     ### The following is for handing POST method 
-    try:
-        username = request.data["username"]
-        password = request.data["password"]
-        confirm_password = request.data["confirm_password"]
-    except KeyError:
+    
+    username = request.data.get("username", "")
+    password = request.data.get("password", "")
+    confirm_password = request.data.get("confirm_password", "")
+    if username == "" or password == "" or confirm_password == "":
         return Response({"error": "欄位尚未填寫完整"},
         status=status.HTTP_422_UNPROCESSABLE_ENTITY)
     
@@ -137,7 +136,7 @@ def general_sign_up(request):
         status=status.HTTP_400_BAD_REQUEST)
     
     # TODO password format validation
-    
+        
     # password confirm validation
     if password != confirm_password:
         return Response({"error":"password_confirmation_failed"},
@@ -152,6 +151,7 @@ def general_sign_up(request):
     # 不用 check user profile model 是不是有建立連結
     # 因為我們已經利用 signal (.models.create_profile) 的方式跟 db 同步
     # 所以 user.save() 時，一定會確保 create_profile 這件事
+    # nickname 經由切 email @ 前面的來得到
     profile = user.userprofile
     profile.nickname = user.username.split("@")[0]
     profile.contact_email = user.username
@@ -176,11 +176,10 @@ def change_password(request):
     if request.method != "POST":
         return render(request, "change_password.html")
 
-    try:
-        current_password = request.data['current_password']
-        new_password = request.data['new_password']
-        confirm_new_password = request.data['confirm_new_password']
-    except KeyError:
+    current_password = request.data.get('current_password', '')
+    new_password = request.data.get('new_password', '')
+    confirm_new_password = request.data.get('confirm_new_password', '')
+    if current_password == "" or new_password == "" or confirm_new_password == "":
         return Response({"error": "請填寫完所有欄位"},
         status=status.HTTP_422_UNPROCESSABLE_ENTITY)
    
@@ -197,7 +196,7 @@ def change_password(request):
     
     user.set_password(new_password)
     user.save()
-
+    
     return Response(status=status.HTTP_200_OK)
 
 # Precondition:
@@ -212,30 +211,28 @@ def find_password(request):
     if request.method != "POST":
         return render(request, "find_password.html") 
 
-    try:
-        email = request.data['email']
-        validate_email(email)
-    except KeyError:
+    email = request.data.get('email', '')
+    if email == "":
         return Response({"error":"沒有email欄位"},
         status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+
+    try:
+        validate_email(email)
     except ValidationError:
-        # 必須要 validate 因為 facebook 不一定能夠取得 email
-        # 會造成多個 email == "" 的情況，後面的 User.objects.get
-        # 就不能使用了
         return Response({"error":"email 格式錯誤"},
         status=status.HTTP_400_BAD_REQUEST)
-    else:
-        # TODO 因為 username is unique data, 這的 filter 可以改變寫法
-        user_exist = User.objects.filter(username=email).exists()
-        if not user_exist:
-            return Response({"error": "沒有這個 email 的使用者"},
-            status=status.HTTP_403_FORBIDDEN)
     
-    # 因為 Oauth 帳戶沒有密碼，所以不提供這功能
-    user = User.objects.get(username=email)
-    if user.social_auth.exists():
-        return Response({"error":"Oauth user 不能使用這個功能"},
+    try:
+        user = User.objects.get(username=email)
+    except User.DoesNotExist:
+        return Response({"error": "沒有這個 email 的使用者"},
         status=status.HTTP_403_FORBIDDEN)
+    else:
+    # 因為 Oauth 帳戶沒有密碼，所以不提供這功能
+        if user.social_auth.exists():
+            return Response({"error":"Oauth user 不能使用這個功能"},
+            status=status.HTTP_403_FORBIDDEN)
     
     # generate reset password url
     url_seed = (email + time.ctime() + "#$@%$").encode("utf-8")
@@ -310,19 +307,19 @@ def reset_password(request, url_token):
         return Response({"error": "驗證連結已超過時間"},
         status=status.HTTP_403_FORBIDDEN)
 
+    new_password = request.data.get('new_password', '')
+    confirm_new_password = request.data.get('confirm_new_password', '')
+    entry_token = request.data.get('entry_token', '')
+    
     # Request Data Validation 
-    try:
-        new_password = request.data['new_password']
-        confirm_new_password = request.data['confirm_new_password']
-        entry_token = request.data['entry_token']
-    except KeyError:
+    if new_password == "" or confirm_new_password == "" or entry_token == "":
         return Response({"error":"欄位沒有填寫完整"},
         status=status.HTTP_422_UNPROCESSABLE_ENTITY)
-    else:
-        if new_password != confirm_new_password or\
-        entry_token != user_reset_password_token.entry_token:
-            return Response({"error":"輸入不一致或是驗證碼錯誤"},
-            status=status.HTTP_400_BAD_REQUEST)
+    
+    if new_password != confirm_new_password or\
+    entry_token != user_reset_password_token.entry_token:
+        return Response({"error":"輸入不一致或是驗證碼錯誤"},
+        status=status.HTTP_400_BAD_REQUEST)
     
     # TODO Password Validation
 
