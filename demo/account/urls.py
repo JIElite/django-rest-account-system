@@ -14,16 +14,24 @@ Including another URLconf
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
 from django.conf.urls import url, include
-from .views import general_sign_up, sign_in, sign_out, get_user_info, change_password, find_password, reset_password 
+from .views import (
+        GeneralSignUpView, 
+        UserInfoTestView,
+        LoginView, 
+        LogoutView, 
+        ChangePasswordView, 
+        FindPasswordView, 
+        ResetPasswordView 
+    )
 
 urlpatterns = [
-    url(r'^register$', general_sign_up),
-    url(r'^login/$', sign_in),
-    url(r'^logout/$', sign_out),
-    url(r'^info/$', get_user_info),
-    url(r'^change_password/$', change_password),
-    url(r'^find_password/$', find_password),
-    url(r'^reset_password/(?P<url_token>[0-9a-f]{64})/$', reset_password),
+    url(r'^register$', GeneralSignUpView.as_view()),
+    url(r'^login/$', LoginView.as_view()),
+    url(r'^logout/$', LogoutView.as_view()),
+    url(r'^info/$', UserInfoTestView.as_view()),
+    url(r'^change_password/$', ChangePasswordView.as_view()),
+    url(r'^find_password/$', FindPasswordView.as_view()),
+    url(r'^reset_password/(?P<url_token>[0-9a-f]{64})/$', ResetPasswordView.as_view()),
     
     url(r'', include('rest_framework_social_oauth2.urls'))
 ]

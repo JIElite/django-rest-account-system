@@ -20,7 +20,7 @@ class ResetPasswordToken(models.Model):
     entry_token = models.CharField(max_length=64, blank=True)
     created_time = models.DateTimeField(auto_now_add=True) 
     updated_time = models.DateTimeField(auto_now=True)
-    expire_time = models.DateTimeField()
+    expire_time = models.DateTimeField(auto_now_add=True)
 
 
 @receiver(post_save, sender=User)
