@@ -247,8 +247,14 @@ class FindPasswordView(APIView):
         rt.dynamic_url = url_token
         rt.entry_token = entry_token
         rt.expire_time = accessible_time
-        rt.save()
         
+        try:
+            rt.save()
+        except:
+            # IntegrityError
+            # TODO 處理 dynamic url not unique
+            rt = None
+
         return rt
     
     def __send_reset_password_url_email_to(self, user):
