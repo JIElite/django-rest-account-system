@@ -153,7 +153,7 @@ with open("demo/oauth_credentials.json") as foauth:
 SOCIAL_AUTH_FACEBOOK_KEY = oauth_credentials['facebook_key']
 SOCIAL_AUTH_FACEBOOK_SECRET = oauth_credentials['facebook_secret']
 SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {
-  'fields': 'id, name, email'
+  'fields': 'id, name, email, picture'
 }
 
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = oauth_credentials['google_key']
