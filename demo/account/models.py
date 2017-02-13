@@ -20,12 +20,11 @@ class ResetPasswordToken(models.Model):
     entry_token = models.CharField(max_length=64, blank=True)
     created_time = models.DateTimeField(auto_now_add=True) 
     updated_time = models.DateTimeField(auto_now=True)
-    expire_time = models.DateTimeField()
+    expire_time = models.DateTimeField(auto_now_add=True)
 
 
 @receiver(post_save, sender=User)
 def create_profile(sender, instance=None, created=False, **kwargs):
     if created:
         UserProfile.objects.create(user=instance)
-        ResetPasswordToken.objects.create(user=instance, expire_time=timezone.localtime(timezone.now()))
 
