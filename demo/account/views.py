@@ -8,7 +8,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError 
 from django.core.mail import send_mail
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.utils import timezone
 
@@ -82,7 +82,8 @@ class LoginView(APIView):
          
         login(request, user)
         
-        return Response(status=status.HTTP_200_OK)
+        return redirect("/")
+        # return Response(status=status.HTTP_200_OK)
 
 
 class LogoutView(APIView):
@@ -170,8 +171,9 @@ class GeneralSignUpView(APIView):
         profile.nickname = user.username.split("@")[0]
         profile.contact_email = user.username
         profile.save()
-
-        return Response(status=status.HTTP_201_CREATED)
+        
+        return redirect("/accounts/login")
+        # return Response(status=status.HTTP_201_CREATED)
 
     
 class ChangePasswordView(APIView):
