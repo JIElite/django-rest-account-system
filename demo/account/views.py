@@ -5,13 +5,13 @@ import uuid
 
 from django.core.validators import validate_email
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError 
 from django.core.mail import send_mail
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.utils import timezone
-
 
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -172,7 +172,10 @@ class GeneralSignUpView(APIView):
         profile.contact_email = user.username
         profile.save()
         
-        return redirect("/accounts/login")
+        user = authenticate(username=username, password=password)
+        login(request, user)
+
+        return redirect("/")
         # return Response(status=status.HTTP_201_CREATED)
 
     
