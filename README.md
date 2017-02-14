@@ -5,13 +5,27 @@
 
 ## Configuration
 這裡有兩個檔案需要設定
-- aws_credentials.py: 裡面要設定 SES 的 IAM user
-- oauth_credentials.py: 要設定你在 Google, Facebook 創建 Oauth API 的憑證
+- aws_credentials.json: 裡面要設定 SES 的 IAM user
+```
+{
+    "ses_user":"user",
+    "ses_password":"your_password"
+}
+```
+- oauth_credentials.json: 要設定你在 Google, Facebook 創建 Oauth API 的憑證
+```
+{
+    "facebook_key":"",
+    "facebook_secret":"",
+    "google_key":"",
+    "google_secret":""
+}
+```
 
 ## Environment Initialization
 ```
 create virtual environment for python
-$ virtualenv -p python env
+$ virtualenv -p python3 env
 $ source env/bin/activate
 $ pip install -r requirements.txt
 
