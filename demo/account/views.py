@@ -5,13 +5,13 @@ import uuid
 
 from django.core.validators import validate_email
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError 
 from django.core.mail import send_mail
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.utils import timezone
-
 
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -82,7 +82,8 @@ class LoginView(APIView):
          
         login(request, user)
         
-        return Response(status=status.HTTP_200_OK)
+        return redirect("/")
+        # return Response(status=status.HTTP_200_OK)
 
 
 class LogoutView(APIView):
@@ -170,8 +171,12 @@ class GeneralSignUpView(APIView):
         profile.nickname = user.username.split("@")[0]
         profile.contact_email = user.username
         profile.save()
+        
+        user = authenticate(username=username, password=password)
+        login(request, user)
 
-        return Response(status=status.HTTP_201_CREATED)
+        return redirect("/")
+        # return Response(status=status.HTTP_201_CREATED)
 
     
 class ChangePasswordView(APIView):
